@@ -1,11 +1,8 @@
 #!/bin/bash
 # PAUSE THE GAME, THEN STOP THE FARM. Use this before ANY change.
 #
-# ⛔⛔ (Sep 16, Montrell: "when you're interrupting the script, you should be
-# pausing it manually while you make your changes.")
 # Stopping the farm on its own leaves the GAME RUNNING with nobody to hike the
-# ball - the play clock keeps ticking and we take a DELAY OF GAME. That has cost
-# several downs today, and once a sack, because the loop died mid-play.
+# ball: the play clock runs out and you take a delay of game.
 #
 #   ./hold.sh     pause the game, then stop the farm
 #   ./farm.sh     restart - it clears the pause menu itself on the way back in

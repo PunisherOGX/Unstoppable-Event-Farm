@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """Read the live HUD by CONTENT, not by fixed coordinates.
 
-⛔⛔ WHY THIS EXISTS. (Measured live, Sep 12 2026, game 2 of the first run.)
-MADDEN USES MORE THAN ONE SCOREBOARD LAYOUT, and this game mode's in-play HUD
-is not the one the Air Raid crops were cut for.
+⛔⛔ WHY THIS EXISTS. MADDEN USES MORE THAN ONE SCOREBOARD LAYOUT, and they
+put the same values in different places:
 
     game 1   wide bar across the bottom; clock at x~1180-1530; both scores
              left of it, cycling with stat pop-ups
     game 2   compact CENTRED block; clock at x~860-1055; one score each side,
              and the down-and-distance on a SECOND ROW above the clock
 
-Every fixed crop inherited from Air Raid is pinned to the first layout, so in
+A fixed crop cut for the first layout is pinned to it, so in
 the second one CLOCKS sampled BARE GRASS. The farm lost the game clock, the play
 clock, the quarter and the score at once: 7 of 7 snaps fell through to "clock
 unreadable", silently disabling clock chewing, quarter tracking and the Q4
@@ -67,7 +66,7 @@ ROW_TOL = 14          # px: how close two boxes must be in y to be one row
 # Minimum x separation between the two scores. Copies of the SAME numeral
 # land within a few px of each other; the real pair straddles the bar.
 SCORE_MIN_GAP = 120
-# ⛔⛔ (Sep 25, measured on the Unstoppable bar) The REAL pair sits only ~115px
+# ⛔⛔ The REAL pair sits only ~115px
 # apart here: "CIN@558 | 5@693 | 5@708 | 9@808 | JOH@939" -> 808-693 = 115,
 # refused by the 120 above. That is why this event logged 0-13 score reads a
 # game, and why the 2nd-half pass switch could not see the score. A duplicate
@@ -88,7 +87,7 @@ NOT_A_CODE = {
     "ILY", "ALU", "TLU", "ILU", "TU", "NU",     # Vision's readings of the NY logo
 }
 
-# ⭐⭐ THE 32 TEAM CODES, AS A WHITELIST. (Sep 14.)
+# ⭐⭐ THE 32 TEAM CODES, AS A WHITELIST.
 # NOT_A_CODE above is a BLOCKLIST, and a blocklist of OCR garbage can never be
 # complete: "TST" and "75T" (both manglings of "1ST") sailed through it and were
 # taken for team codes. That widened the score span to the right and swallowed
@@ -108,7 +107,7 @@ TEAM_CODES = {
 }
 
 # ⛔⛔ OUR SIDE IS LABELLED WITH THE GAMERTAG, NOT A TEAM CODE.
-# (Sep 15) The bar reads "DET 0 x 6 JOH" - "JOH" is JohnWick_OGX, not a team.
+# The bar reads "DET 0 x 6 JOH" - "JOH" is JohnWick_OGX, not a team.
 # With only ONE recognised code on the row the parser cannot pair the scores, so
 # it returned nothing, the tally sat at 0-0, and the Q4 bail-out PAUSED A GAME
 # WE WERE WINNING because 0-0 in the fourth looks like a tie.
@@ -237,7 +236,7 @@ def parse_hud(boxes):
     # The HUD puts "OT" where the ordinal would be, on the CLOCK ROW.
     #
     # ⛔ Scanning all the merged text for "OT" false-positived while we led 34-5
-    # (Sep 13) - some fragment on the special-teams screen matched. That is
+    # - some fragment on the special-teams screen matched. That is
     # expensive: `overtime` is sticky for the game and it switches OFF both the
     # clock chewing and the quarter-end skip, so a false positive quietly costs
     # minutes on a game we are already winning.
@@ -271,8 +270,7 @@ def parse_hud(boxes):
                     # ⭐ GOAL TO GO. "1ST & GOAL" instead of "1ST & 10" is the
                     # cheapest possible read of field position: it is already on
                     # this row, already parsed, and needs no new geometry and no
-                    # arrow-direction logic. Montrell proposed it himself as the
-                    # easier equivalent of reading the yard line.
+                    # arrow-direction logic.
                     #
                     # ⛔ Vision renders "GOAL" as "60AL"/"GDAL" and "&" as "8",
                     # so match on a LOOSE prefix over the next few tokens rather
@@ -282,15 +280,13 @@ def parse_hud(boxes):
                     res["goal"] = any(g in tail for g in
                                       ("GOAL", "GOA", "60AL", "GDAL", "G0AL"))
 
-                    # ⭐ FIELD POSITION, RAW. (Sep 15, for a future "kick the FG
-                    # inside the 10" rule.) It renders after the play clock as
-                    # an arrow plus a yard line - "▼ 32", "▲ 26" - and Vision
-                    # mangles the arrow into ^, ~, v, or drops it entirely.
+                    # ⭐ FIELD POSITION, used by the field-goal range check in
+                    # grind.py. It renders after the play clock as an arrow plus
+                    # a yard line - "▼ 32", "▲ 26" - and Vision mangles the
+                    # arrow into ^, ~, v, or drops it entirely.
                     # ⛔ DIRECTION IS THE WHOLE RULE: down-arrow is OUR half,
-                    # up-arrow is theirs. Getting it backwards would try a
-                    # 92-yard field goal. So record the RAW token for now and
-                    # decide from evidence whether it is reliable enough to act
-                    # on - do not infer a direction we cannot actually see.
+                    # up-arrow is theirs. The raw arrow token is returned, and
+                    # the caller only trusts an up-arrow (or GOAL TO GO).
                     after = [(_clean(t), x) for t, x in row[i + 3:]]
                     for tok, _x in after:
                         m_fp = re.match(r"^([\^~v\u25b2\u25bc]?)\s*(\d{1,2})$",
@@ -325,7 +321,7 @@ def parse_hud(boxes):
         # LOOKS like a code (TST, 75T, ILU) is not one.
         codes = [(t, x) for t, x in row
                  if _clean_code(t).upper() in TEAM_CODES]
-        # ⛔ ONE CODE IS ENOUGH TO ANCHOR ON. (Sep 16.) Some presentations show
+        # ⛔ ONE CODE IS ENOUGH TO ANCHOR ON. Some presentations show
         # the opponent's abbreviation but render OUR side as a logo with no
         # text, so requiring two codes threw the whole row away - the tally sat
         # at 0-0 and the Q4 check paused a game we were winning 7-3.
@@ -342,7 +338,7 @@ def parse_hud(boxes):
             elif c.upper() in ("O", "U"):
                 # A lone zero renders as the letter O - measured repeatedly, it
                 # is the ONE value Vision drops rather than misreads.
-                # ⛔ And as "U" on the boxed-score presentation (Sep 18: "MIA 3
+                # ⛔ And as "U" on the boxed-score presentation ("MIA 3
                 # | U JOH" for 3-0, every read of a whole losing Q4 - no score
                 # was ever recorded, and the Q4 alarm never fired).
                 nums.append((0, x))
@@ -351,7 +347,7 @@ def parse_hud(boxes):
         left, right = codes[0], codes[-1]
 
         # ⛔⛔ THE SCORES LIE *BETWEEN* THE TWO TEAM CODES. NOTHING ELSE COUNTS.
-        # (Sep 14 - this was reading the PLAY CLOCK as our score.) Pairing each
+        # Pairing each
         # code with its NEAREST number puts our score on whatever token happens
         # to sit closest to the right-hand code - and on the wide presentation
         # that is the play clock, just outside the bar:
@@ -368,7 +364,7 @@ def parse_hud(boxes):
         lo, hi = min(left[1], right[1]), max(left[1], right[1])
         inner = [n for n in nums if lo < n[1] < hi]
 
-        # ⛔⛔ SOME PRESENTATIONS SHOW ONLY ONE TEAM CODE. (Sep 16.)
+        # ⛔⛔ SOME PRESENTATIONS SHOW ONLY ONE TEAM CODE.
         # Measured live: "TEN@560 | 3@695 | 7@799 | ... | 4th@1318 | 2:56@1391".
         # The opponent had a text code; OUR side was a logo with no text. With
         # one code there is no span to bracket, so the parser returned nothing,
@@ -393,7 +389,7 @@ def parse_hud(boxes):
         theirs = min(inner, key=lambda n: n[1])
         ours = max(inner, key=lambda n: n[1])
         # ⛔ THE OPPONENT'S SCORE IS ALWAYS LEFT OF OURS. Refuse anything else.
-        # (Measured live, Sep 12: with the opponent's "0" unread, the left code
+        # (Measured live, with the opponent's "0" unread, the left code
         # latched onto OUR score and reported theirs=14 while we led 14-0. The
         # score validator rejected it downstream, but a mis-pairing should never
         # get that far - it only has to slip through once, at a moment the
@@ -404,8 +400,8 @@ def parse_hud(boxes):
         # are legible and correctly returns None when only one is - which is an
         # honest "look again", not a wrong answer.
         # ⛔⛔ THE TWO SCORES MUST BE GENUINELY FAR APART ON SCREEN.
-        # (Sep 13: reported a 20-20 TIE during a 20-0 win, which paused the
-        # game and made Montrell take over for nothing.)
+        # (reported a 20-20 TIE during a 20-0 win, which paused the
+        # game and made the player take over for nothing.)
         #
         # A real ZERO is the one value OCR loses rather than misreads - it
         # vanishes. With the opponent's 0 unread, the merged passes can yield
@@ -427,33 +423,6 @@ def parse_hud(boxes):
             res["theirs"], res["ours"] = theirs[0], ours[0]
             break
     return res
-
-
-def _vote(results, key, need=1):
-    vals = [r[key] for r in results if r.get(key) is not None]
-    if not vals:
-        return None
-    val, n = Counter(vals).most_common(1)[0]
-    return val if n >= need else None
-
-
-def parse_voted(per_scale):
-    """Combine per-scale parses.
-
-    ⛔ SCORES NEED TWO AGREEING SCALES. They gate the Q4 bail-out and the
-    recorded result, and a single bad read once manufactured a phantom lead.
-    The clock fields take a plurality: a wrong one costs a mistimed snap that
-    the next read corrects, so demanding agreement there would just throw away
-    good reads on the frames where only one scale resolved the glyphs.
-    """
-    return {
-        "quarter": _vote(per_scale, "quarter"),
-        "game": _vote(per_scale, "game"),
-        "play": _vote(per_scale, "play"),
-        "down": _vote(per_scale, "down"),
-        "theirs": _vote(per_scale, "theirs", need=2),
-        "ours": _vote(per_scale, "ours", need=2),
-    }
 
 
 def _sub_image(img, rect):
@@ -516,20 +485,9 @@ def read_hud(path=None, scales=HUD_SCALES):
 # ---------------------------------------------------------------------------
 # WHICH PRESENTATION IS THIS?
 # ---------------------------------------------------------------------------
-# ⭐ Montrell, Sep 12 2026: "Madden has different gameplay presentation styles
-# for different games - Sunday night, Monday night, Thursday night, and the
-# default one. This event plays out like an NFL season, so there's a chance the
-# scoreboard is different on a per-game basis."
-#
-# That is exactly what we measured: tier 1 game 1 used the default wide bar
-# (the same one Air Raid used all the way through), and tier 1 game 2 came up
-# in a centred primetime block.
-#
-# ⛔ We do NOT branch on this - the reader is content-based precisely so it does
-# not have to. It is RECORDED so we can find out whether the presentation is
-# deterministic (i.e. game 2 of a tier is always primetime) or random. If it
-# turns out to be fixed per slot, that is useful to know; if it is random, the
-# content-based reader is the only thing that could ever have worked.
+# Madden has several broadcast presentations (the default wide bar, a centred
+# primetime-style block, ...), and a game can use any of them. The reader is
+# content-based so it does not care; the layout is only RECORDED in the history.
 #
 # The clock's x-centre is the cheapest stable fingerprint we already compute.
 FAST_SUBCROPS = ((0, 0, 1920, 130), (480, 10, 960, 120))
@@ -545,7 +503,7 @@ def layout_name(clock_x):
     if clock_x is None:
         return None
     if clock_x >= 1200:
-        return "wide"        # the default bar; Air Raid used this throughout
+        return "wide"        # the default bar
     if clock_x >= 700:
         return "centred"     # primetime-style compact block
     return f"other@{clock_x}"
@@ -563,17 +521,10 @@ def read_clocks_fast(path=None):
                                   subcrops=FAST_SUBCROPS))
 
 
-def merged_boxes_capture(path=None):
-    """Capture the band and return its merged boxes - for text-level checks."""
-    path = path or f"{C.SHOT_DIR}/hud.png"
-    pad.shot(HUD_BAND, path)
-    return merged_boxes(path, scales=FAST_SCALES, subcrops=FAST_SUBCROPS)
-
-
 # ---------------------------------------------------------------------------
 # THE FINAL SCORE, FROM THE SCREEN THAT SAYS THE GAME IS OVER
 # ---------------------------------------------------------------------------
-# ⛔⛔ WHY THIS EXISTS. (Sep 12 2026, and it recorded a false LOSS.) The result
+# ⛔⛔ WHY THIS EXISTS. The result
 # used to come from the last in-play score the loop happened to accept before it
 # decided the game had ended. Two things then went wrong at once:
 #

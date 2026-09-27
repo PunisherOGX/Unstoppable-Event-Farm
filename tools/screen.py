@@ -91,7 +91,7 @@ def box_mean(buf, w, h, bpr, bpp, x0, x1, y0, y1):
     """Mean luminance of a RECTANGLE, sampled every 2nd pixel.
 
     ⛔ THIS EXISTS BECAUSE band_y WAS WRONG FOR MENU ROWS. (Measured live on the
-    ENTRY OPTIONS screen, Sep 12.) band_y averages the FULL WIDTH of the screen,
+    ENTRY OPTIONS screen.) band_y averages the FULL WIDTH of the screen,
     but a Madden menu button is ~430px of a 1920px-wide display - so ~78% of
     every sample was background, and a genuinely highlighted row read 41.7
     against an unhighlighted 43.4. The highlight was real and plainly visible in
@@ -141,7 +141,7 @@ def ocr_boxes(region=None, path=None, scale=2.0):
     entry-options screen sent ~11 tier rewards down the wrong path last event.
     With positions we can find an option by its WORDS wherever it sits, then
     measure whether that row is the highlighted one - so the code survives the
-    layout moving, which is exactly what Montrell asked for.
+    layout moving, which is exactly what the player asked for.
 
     ⛔ Vision's boundingBox is normalised with a BOTTOM-LEFT origin. The flip is
     done here, once, so no caller has to remember it.
@@ -368,11 +368,6 @@ def read_hud_full():
     return hud.read_hud()
 
 
-def read_quarter():
-    """Return 1-4, or None."""
-    return read_clocks()[0]
-
-
 def read_is_overtime():
     """True only if the HUD shows OT where the QUARTER belongs.
 
@@ -385,12 +380,6 @@ def read_is_overtime():
         return bool(hud.read_clocks_fast().get("overtime"))
     except Exception:
         return False
-
-
-def read_down():
-    """Current down (1-4), or None."""
-    import hud
-    return hud.read_hud()["down"]
 
 
 def read_score():
@@ -419,7 +408,7 @@ def read_score():
 # ---------------------------------------------------------------------------
 
 def read_tier_badge():
-    """"ARCADE" (tier 1/2), "COMP" (tier 3), or None.
+    """"ARCADE", "COMP", or None (the difficulty badge).
 
     ⭐ Reads the FULL SCREEN text, not a narrow crop. On the old build a 270x60
     crop at the badge's apparent position missed it on 6 of 6 attempts while the
@@ -430,9 +419,8 @@ def read_tier_badge():
     menus, or in cut scenes - so None is the normal answer, not a failure. Call
     it repeatedly until it answers.
 
-    ⛔ NEVER act on a single read. One read said "ARCADE" during a tier 3 game
-    and cost a run. In THIS build the badge is logged, not acted on, which is
-    why a misread can no longer cost anything.
+    ⛔ NEVER act on a single read: it has misread before. The badge is only
+    logged, never acted on.
     """
     try:
         t = screen_text()
@@ -480,7 +468,7 @@ def tempo_label():
 # ---------------------------------------------------------------------------
 
 # ⛔⛔ MARKERS THAT MEAN WE ARE LOOKING AT THE MAC, NOT THE PS5.
-# (Sep 13 2026.) After a chiaki restart the stream can end up behind other
+# After a chiaki restart the stream can end up behind other
 # windows, and the daemon captures the WHOLE DISPLAY - so the loop was reading
 # the macOS desktop and Terminal while still pressing buttons. The keycodes it
 # sends include RETURN and BACKSPACE, which in a terminal are not harmless.

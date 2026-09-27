@@ -3,7 +3,7 @@
 cd "$(dirname "$0")" || exit 1
 
 # Resolve the interpreter. Order: an explicit MUT_PY, this repo's venv, then a
-# legacy sibling venv (Montrell's mini), then whatever python3 is on PATH.
+# sibling qenv, then whatever python3 is on PATH.
 resolve_py() {
   # ⛔ We have already cd'd into the script's directory, so use PWD.
   # "$(dirname "$0")" here would resolve against the NEW cwd and point at a
@@ -36,8 +36,7 @@ echo "=== LAST 10 COMPLETED GAMES (persistent history) ==="
 echo "  time          badge   layout   score  plays  mins   gap"
 "$PY" - <<'PY'
 import json, os
-# ⛔ Must match config.HISTORY. (Sep 25) This still read Clock's Ticking's
-# ~/.mut_event_history.jsonl, so status showed Sep 21 games all day.
+# Must match config.HISTORY.
 F = os.path.expanduser(os.environ.get("MUT_EVENT_HISTORY",
                                       "~/.mut_unstoppable_history.jsonl"))
 if not os.path.exists(F):
@@ -74,7 +73,7 @@ else:
 PY
 echo
 echo "=== NEEDS ATTENTION ==="
-[ -f /tmp/mut-event/INTERVENE ] && { echo "  ⏸  PAUSED, WAITING ON YOU:"; cat /tmp/mut-event/INTERVENE; }
+[ -f /tmp/mut-event/HALT ] && { echo "  ⛔ HALTED:"; cat /tmp/mut-event/HALT; }
 [ -f /tmp/mut-event/FROZEN ] && { echo "  🧊 FROZEN:"; cat /tmp/mut-event/FROZEN; }
 echo "  --- sticky alerts (only a human clears these) ---"
 tail -5 /tmp/mut-event/ALERT.STICKY 2>/dev/null || echo "  none"

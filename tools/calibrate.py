@@ -24,7 +24,7 @@ Usage (from new-event/tools, with the stream up):
     ./calibrate.py snapfloor N     ⚠️ PRESSES CROSS - tests MIN_SNAP_WAIT
 
 ⛔ The two marked commands send input. Everything else is READ-ONLY and is safe
-to run while Montrell has the pad.
+to run while the player has the pad.
 """
 import json
 import os
@@ -225,7 +225,7 @@ def cmd_verify(seconds=120):
     """Sign the crop regions off against a REAL screen, OPPORTUNISTICALLY.
 
     ⛔ A SINGLE SNAPSHOT CANNOT DO THIS, and trying cost a play the first time.
-    (Measured live, Sep 12.) Each region is only readable in its own moment:
+    Each region is only readable in its own moment:
 
       * TABSTRIP  only on a playcall screen - blank pre-snap and mid-play
       * SCORE     only when the bar is showing the SCORE. It cycles stat
@@ -306,8 +306,8 @@ def cmd_verify(seconds=120):
 def cmd_unstick():
     """The playcall page is stuck on "[RELEASE] SELECT STUNT" - find what clears it.
 
-    (Sep 18) This state ate 60 minutes and was written up as "the Madden
-    freeze, quit by hand". Montrell then cleared it by mashing his controller,
+    This state ate 60 minutes and was written up as "the Madden
+    freeze, quit by hand". The player then cleared it by mashing his controller,
     so it IS recoverable - we just do not know by which button. This sends
     every mapped key ONE AT A TIME, reads the action bar after each, and stops
     at the first one that clears it. Run it ON the stuck playcall page.

@@ -9,14 +9,14 @@
 
 ## What this is
 
-A closed-loop farm for the Madden Ultimate Team CPU event **GT: Clock's Ticking**.
+A closed-loop farm for the Madden NFL 27 Ultimate Team event **UNSTOPPABLE (CPU)**.
 It reads the PS5's screen over a Remote Play stream, classifies the situation,
 presses buttons, verifies the result, and repeats. Nothing is time-based.
 
     read the screen -> classify -> act -> verify -> repeat
 
-It is **supervised software.** It is not designed to run unattended for days,
-and it has no anti-detection layer by deliberate choice.
+Run it with the watcher (`tools/health.sh`) so you hear about anything that
+needs a human. It has no anti-detection layer, by deliberate choice.
 
 ---
 
@@ -113,7 +113,7 @@ cd tools && ./calibrate.py event
 ./calibrate.py verify
 
 # 5. Go.
-./farm.sh          # and arm ./health.sh alongside it, in the background
+./farm.sh          # then start ./health.sh in the background
 ./status.sh        # report, any time
 ```
 
@@ -134,10 +134,14 @@ purpose. To retarget:
    and pressing X on the wrong one enters a different mode, so the match is a
    title regex *plus* a require list *plus* a reject list. Run
    `calibrate.py event` and read the real text off the screen.
-2. `OFF_PLAY_BUTTON` / `DEF_PLAY_BUTTON` and their tabs — the plays.
+2. `OFFENSE` (play name, button, run timing) / `DEF_PLAY_BUTTON` and their
+   tabs — the plays. The play name is checked against the visible favourites
+   row before the button is pressed.
 3. `LINEUP_ROWS` / `LINEUP_WANT` — the entry-options screen.
-4. `HIKE_AT` — whether to chew the play clock. **Measure it, don't assume it:**
-   it depends on whether your offensive play ends in bounds.
+4. `HIKE_AT` / `CHEW_SKIP_BELOW` — whether to chew the play clock. **Measure
+   it, don't assume it:** it depends on whether your offensive play ends in
+   bounds. Keep `MIN_SNAP_WAIT` at 6.0 unless you have watched a shorter one
+   work: the snap is refused until every player is set.
 
 ### What you do NOT need to touch
 

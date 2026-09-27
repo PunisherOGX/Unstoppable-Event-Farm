@@ -1,14 +1,12 @@
 #!/bin/bash
 # Start the farm. APPENDS to a dated log so a restart can never destroy history.
 #
-# ⛔ AFTER RUNNING THIS, ARM THE WATCHER IN THE SAME MESSAGE:
-#       ./health.sh        (via the Bash tool with run_in_background: true)
-# A `nohup ... &` cannot notify Claude. This has failed twice, and both times
-# Montrell found a paused game himself.
+#   ./farm.sh          start (then start ./health.sh in the background)
+#   ./farm.sh stop     stop cleanly at the next play boundary
 cd "$(dirname "$0")" || exit 1
 
 # Resolve the interpreter. Order: an explicit MUT_PY, this repo's venv, then a
-# legacy sibling venv (Montrell's mini), then whatever python3 is on PATH.
+# sibling qenv, then whatever python3 is on PATH.
 resolve_py() {
   # ⛔ We have already cd'd into the script's directory, so use PWD.
   # "$(dirname "$0")" here would resolve against the NEW cwd and point at a
@@ -28,10 +26,9 @@ fi
 
 export MUT_PAD_REMOTE=local
 
-# ⛔⛔ `farm.sh stop` - THE ONLY SAFE WAY TO STOP. Never `pkill` the loop.
-# (Sep 13) A bare pkill landed between the hike and the throw: the QB held the
-# ball, took a sack, and Montrell had to take over. The loop checks for this
-# file at a PLAY BOUNDARY, so stopping costs nothing.
+# `farm.sh stop` is the clean way to stop: the loop checks for this file at a
+# play boundary. A bare pkill can land mid-play, after the snap.
+# (If you are taking over the controller yourself, killing it at once is fine.)
 mkdir -p /tmp/mut-event
 if [ "$1" = "stop" ]; then
   pgrep -f "grind.py loop" >/dev/null || { echo "not running"; exit 0; }
@@ -49,23 +46,19 @@ if [ "$1" = "stop" ]; then
 fi
 rm -f /tmp/mut-event/stop
 
-# ⛔ The reachability check comes AFTER the stop path on purpose. (Sep 17) The
-# PS5 went down mid-game and `farm.sh stop` refused with "PS5 UNREACHABLE" -
-# the one moment the farm most needs stopping is exactly when the console has
-# died under it.
+# The reachability check comes AFTER the stop path on purpose, so the farm can
+# still be stopped when the console has gone down.
 ping -c 1 -t 2 "${MUT_PS5_HOST:-192.168.1.50}" >/dev/null 2>&1 \
   || { echo "PS5 UNREACHABLE - not starting"; exit 1; }
 
-# ⛔⛔⛔ A TIER 3/4 LOSS HALT IS NOT SOMETHING A RESTART MAY STEP OVER.
-# The whole point is that Montrell decides what happens next, not a reflex
-# `./farm.sh`. Clearing this is a deliberate act.
+# A HALT (a loss, with MUT_EVENT_HALT_ANY_LOSS=1) is not something a restart may
+# step over. Clearing it is a deliberate act.
 if [ -f /tmp/mut-event/HALT ]; then
   echo ""
-  echo "⛔ FARM HALTED - a loss on tier 3/4:"
+  echo "⛔ FARM HALTED:"
   sed 's/^/   /' /tmp/mut-event/HALT
   echo ""
-  echo "   The run is one loss from over. Take the next game yourself, or"
-  echo "   clear the halt deliberately:  rm /tmp/mut-event/HALT"
+  echo "   Clear it deliberately to carry on:  rm /tmp/mut-event/HALT"
   echo ""
   exit 1
 fi

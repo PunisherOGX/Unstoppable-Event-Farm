@@ -11,7 +11,7 @@ Listens on 127.0.0.1 only. Reached from the MacBook over SSH, e.g.
         -X POST 127.0.0.1:8773/press -d "{\"buttons\":[\"right\",\"cross\"]}"'
 
 Why this exists: CGEventPost injects at the HID layer, which is machine-global.
-Running it on the MacBook takes over Montrell's mouse and keyboard. Running it
+Running it on the MacBook takes over the player's mouse and keyboard. Running it
 here does not, because nobody is sitting at the mini.
 """
 
@@ -51,8 +51,8 @@ KEYS = {
     "l2": 18, "r2": 21,  # 1 / 4      - sort field / sort direction
     "options": 31,       # O
     "ps": 53,            # Esc
-    # ⭐ ANALOG STICKS - verified live in the practice pause menu, Sep 3 2026.
-    # The mapping is PERMANENT (Montrell's rule); only the BEHAVIOUR toggles.
+    # ⭐ ANALOG STICKS - verified live in the practice pause menu.
+    # The mapping is PERMANENT (the player's rule); only the BEHAVIOUR toggles.
     # Because these live in KEYS, /release can clear them - which is exactly the
     # latch hazard that wrecked the first attempt.
     #
@@ -116,7 +116,7 @@ def load_token():
 
 TOKEN = load_token()
 
-# ⛔⛔ FAIL CLOSED. Reported by an external review, Sep 6 2026, and it was right:
+# ⛔⛔ FAIL CLOSED. Reported by an external review, and it was right:
 # with no token this daemon served EVERY route unauthenticated, so any local
 # process could type into the machine and screenshot it. Refuse to start.
 if not TOKEN:
@@ -253,7 +253,7 @@ def _write_png(img, path):
 def capture(region=None, display=1, path=None, fresh=True):
     """Capture the screen (or a region) and return the file path.
 
-    ⭐⭐ IN-PROCESS via CoreGraphics, NOT /usr/sbin/screencapture (Sep 6 2026).
+    ⭐⭐ IN-PROCESS via CoreGraphics, NOT /usr/sbin/screencapture
     Measured on this mini:
 
         screencapture -R ...          1.90s   <- and FIXED, regardless of size

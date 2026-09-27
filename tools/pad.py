@@ -29,7 +29,7 @@ import Quartz
 #   export MUT_PAD_REMOTE=mini        # an ssh host alias from ~/.ssh/config
 #
 # Why: CGEventPost injects at the HID layer, which is machine-global, so local
-# mode takes over Montrell's mouse and keyboard for the whole run. In remote
+# mode takes over the player's mouse and keyboard for the whole run. In remote
 # mode every press and capture happens on the mini and this machine stays free.
 #
 # step.py needs NO changes — it only calls focus/press/click/shot, and each of
@@ -64,7 +64,7 @@ def _token():
     return _TOKEN
 
 
-# ⛔⛔ ONE PERSISTENT CONNECTION TO THE DAEMON, NOT ONE PER CALL. (Sep 19)
+# ⛔⛔ ONE PERSISTENT CONNECTION TO THE DAEMON, NOT ONE PER CALL.
 # urllib opened a fresh TCP connection for every press and every capture -
 # thousands per game - and each one left a TIME_WAIT entry on 127.0.0.1:8773.
 # The mini's kernel (50 days up) stopped reaping them: 10,022 sat there for
@@ -217,8 +217,8 @@ KEYS = {
     "l2": 18, "r2": 21,  # 1 / 4      - sort field / direction
     "options": 31,       # O
     "ps": 53,            # Esc
-    # ⭐ ANALOG STICKS - verified live in the practice pause menu, Sep 3 2026.
-    # The mapping is PERMANENT (Montrell's rule); only the BEHAVIOUR toggles.
+    # ⭐ ANALOG STICKS - verified live in the practice pause menu.
+    # The mapping is PERMANENT (the player's rule); only the BEHAVIOUR toggles.
     # Because these live in KEYS, /release can clear them - which is exactly the
     # latch hazard that wrecked the first attempt.
     #
@@ -307,7 +307,7 @@ def release(timeout=5):
     and "chiaki is not frontmost" is precisely the situation that strands a
     key-down in the first place.
 
-    (Sep 15) Montrell watched the QB sprint for an entire game on a stuck R2,
+    The player watched the QB sprint for an entire game on a stuck R2,
     through several releases that all reported success. The daemon's
     "released: 24" is just the COUNT OF MAPPED KEYS - a constant - so it never
     indicated that anything had actually been lifted. Focus first, then lift.

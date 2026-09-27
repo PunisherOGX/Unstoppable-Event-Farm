@@ -1,53 +1,53 @@
 #!/bin/bash
-# THE WATCHER. Blocks until something actually needs Montrell, then exits with a
-# reason on stdout.
+# THE WATCHER. Blocks until something needs a human, prints why, and exits.
 #
-# ⛔ ARM THIS VIA THE BASH TOOL WITH run_in_background: true, in the SAME message
-# as farm.sh. That is the only way its exit can notify Claude - a `nohup ... &`
-# cannot. This has failed twice and both times Montrell found a paused game
-# himself.
+# Run it in the background right after ./farm.sh, from whatever is supervising
+# the farm (a terminal, or an AI agent's background-task tool). Its exit IS the
+# notification, so launch it in a way that tells you when it exits: a plain
+# `nohup ... &` does not.
+#
+# It trips when:
+#   - the grind.py process is gone
+#   - a HALT or FROZEN file appears, or a new line lands in ALERT.STICKY
+#   - the log stops growing for MUT_EVENT_STALE seconds (default 420)
+#   - no game has finished for MUT_EVENT_NO_GAME seconds (default 2700): the
+#     loop is busy but stuck, e.g. backing out of the same screen forever
 D=/tmp/mut-event
+LOG=$D/grind.log
 sticky_count() { [ -f "$D/ALERT.STICKY" ] && wc -l < "$D/ALERT.STICKY" || echo 0; }
+games_done() { grep -c "GAME [0-9]* END" "$LOG" 2>/dev/null || echo 0; }
 STICKY_BEFORE=$(sticky_count)
+STALE_SECS=${MUT_EVENT_STALE:-420}
+NO_GAME_SECS=${MUT_EVENT_NO_GAME:-2700}
 
-# ⛔⛔ ONLY TRIP ON EVENTS NEWER THAN THIS WATCHER.
-# (Sep 13) Three separate arms were consumed within seconds by a LEFTOVER
-# INTERVENE file from a process that had already been killed. Each one printed a
-# stale pause, exited, and left the LIVE game completely unwatched - the exact
-# failure this script exists to prevent. A file on disk is not an event; a file
-# written AFTER we started watching is.
+# Only trip on files written AFTER this watcher started: a leftover file from
+# an earlier run is not an event.
 ARMED=$(date +%s)
-newer_than_arm() {   # $1 = path. True only if it exists and postdates ARMED.
+newer_than_arm() {
   [ -f "$1" ] || return 1
   [ "$(stat -f %m "$1")" -ge "$ARMED" ]
 }
-STALE_SECS=${MUT_EVENT_STALE:-420}
+LAST_GAMES=$(games_done)
+LAST_GAME_T=$ARMED
 
 while true; do
   sleep 30
 
   if ! pgrep -f "grind.py loop" >/dev/null; then
-    echo "FARM STOPPED — the grind.py process is gone."
-    tail -15 "$D"/grind-*.log 2>/dev/null | tail -15
-    exit 0
-  fi
-
-  if newer_than_arm "$D/INTERVENE"; then
-    echo "PAUSED — losing at the start of Q4, waiting on a decision:"
-    cat "$D/INTERVENE"
-    echo "Answer by creating ONE of: $D/RESUME (play it out), $D/INTERVENED (I have the pad), $D/EXTEND (+30 min)"
+    echo "FARM STOPPED - the grind.py process is gone."
+    tail -15 "$LOG" 2>/dev/null
     exit 0
   fi
 
   if newer_than_arm "$D/HALT"; then
-    echo "⛔ FARM HALTED — a loss on tier 3 or 4. It stopped BEFORE entering another game."
+    echo "FARM HALTED - it stopped BEFORE entering another game:"
     cat "$D/HALT"
-    echo "The run is one loss from over. Take the next game yourself, then: rm $D/HALT"
+    echo "To carry on: rm $D/HALT && ./farm.sh"
     exit 0
   fi
 
   if newer_than_arm "$D/FROZEN"; then
-    echo "GAME FROZEN — the loop aborted. Madden has to be quit by hand."
+    echo "GAME FROZEN - the loop aborted. Madden has to be quit by hand."
     cat "$D/FROZEN"
     exit 0
   fi
@@ -59,24 +59,21 @@ while true; do
     exit 0
   fi
 
-  # A log that stops growing means the loop is wedged even though the process
-  # is alive — the failure mode that burned 4h15m unnoticed on the old build.
-  # ⛔⛔ A PAUSE IS NOT A STALL. While an INTERVENE pause is open the loop is
-  # deliberately writing nothing - for up to 30 MINUTES - which trips the
-  # staleness check and kills this watcher on a false alarm. That leaves the
-  # live game unwatched, which is the one thing this script exists to prevent.
-  # (The in-loop watchdogs learned this same lesson on Sep 13.)
-  if [ -f "$D/INTERVENE" ]; then
-    continue
-  fi
-
-  L=$(ls -t "$D"/grind-*.log 2>/dev/null | head -1)
-  if [ -n "$L" ]; then
-    AGE=$(( $(date +%s) - $(stat -f %m "$L") ))
+  if [ -f "$LOG" ]; then
+    AGE=$(( $(date +%s) - $(stat -f %m "$LOG") ))
     if [ "$AGE" -gt "$STALE_SECS" ]; then
-      echo "LOG STALE — nothing written for ${AGE}s (threshold ${STALE_SECS}s). The loop is alive but not progressing."
-      tail -15 "$L"
+      echo "LOG STALE - nothing written for ${AGE}s. The loop is alive but not progressing."
+      tail -15 "$LOG"
       exit 0
     fi
+  fi
+
+  G=$(games_done)
+  if [ "$G" -gt "$LAST_GAMES" ]; then
+    LAST_GAMES=$G; LAST_GAME_T=$(date +%s)
+  elif [ $(( $(date +%s) - LAST_GAME_T )) -gt "$NO_GAME_SECS" ]; then
+    echo "NO GAME FINISHED in $(( NO_GAME_SECS / 60 )) min (games logged: $G)."
+    grep -v "\.\.\. waiting" "$LOG" | tail -12
+    exit 0
   fi
 done

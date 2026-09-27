@@ -99,5 +99,5 @@ say "Next"
 cat <<'TXT'
   1. Open chiaki and connect to your console.
   2. cd tools && ./calibrate.py verify     # must pass before the farm will run
-  3. ./farm.sh                             # and arm ./health.sh alongside it
+  3. ./farm.sh                             # then ./health.sh in the background
 TXT
