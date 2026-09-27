@@ -597,54 +597,27 @@ def _accept_score(g, which, value, log):
 def _special_teams(stamp, log):
     """4th down / kickoff screen. Returns (snapped, status, hint).
 
-    Kickoffs are taken normally. A punt is refused (GO_FOR_IT_ON_FOURTH): the
-    loop goes back to the offensive FAVORITES and runs the play. A field goal
-    is kicked only from inside the opponent's FG_MAX_YARDLINE.
+    Kickoffs are taken normally. On 4th down the loop never punts and never
+    kicks a field goal (GO_FOR_IT_ON_FOURTH): it goes back to the offensive
+    FAVORITES and runs the play.
     """
     try:
         sttxt = (screen.screen_text() or "").upper()
     except Exception:
         sttxt = ""
     kick_screen = "KICKOFF" in sttxt or "ONSIDE" in sttxt
+    fourth_down = ("PUNT" in sttxt or "FIELD GOAL" in sttxt) and not kick_screen
+    if not (fourth_down and C.GO_FOR_IT_ON_FOURTH):
+        return actions.call_special_teams(log=log)
 
-    def go_for_it(why):
-        if not actions.goto_tab("offense", C.OFF_TAB):
-            return None
-        log(f"    {why} -> {C.OFFENSE['name']}")
-        pad.press(C.OFFENSE["button"], hold=C.OFF_SELECT_HOLD)
-        snapped, status, hint = actions.chew_and_hike(
-            C.OFFENSE["run_seq"], log=log, allow_skip=False, chew=False)
-        return snapped, f"4TH DOWN GO - {status}", hint
-
-    if "FIELD GOAL" in sttxt and not kick_screen:
-        yl = arrow = None
-        goal = False
-        try:
-            h = hud.read_hud()
-            yl, arrow, goal = h.get("yardline"), h.get("yard_arrow"), bool(h.get("goal"))
-        except Exception:
-            pass
-        # "10" alone could be our own 10: require the up-arrow or GOAL TO GO.
-        in_range = (yl is not None and yl <= C.FG_MAX_YARDLINE
-                    and (arrow in ("^", "▲") or goal))
-        if not in_range:
-            log(f"[{stamp()}]   FG offered but NOT inside their "
-                f"{C.FG_MAX_YARDLINE} (yard={yl} arrow={arrow!r} goal={goal})")
-            res = go_for_it("going for it")
-            if res:
-                return res
-            log("    ! could not reach FAVORITES - taking the kick anyway")
-        log(f"[{stamp()}]   FIELD GOAL"
-            + (f" (their {yl})" if yl is not None else ""))
-        return actions.kick_field_goal(log=log)
-
-    if "PUNT" in sttxt and not kick_screen and C.GO_FOR_IT_ON_FOURTH:
-        res = go_for_it("PUNT screen: going for it")
-        if res:
-            return res
-        # A delay of game on 4th down is worse than the punt.
-        log("    ! could not reach FAVORITES from the punt screen - punting")
-    return actions.call_special_teams(log=log)
+    if not actions.goto_tab("offense", C.OFF_TAB):
+        # Never fall back to a kick: look again on the next pass.
+        return False, "4th down: could not reach FAVORITES - retrying", 0.5
+    log(f"[{stamp()}]   4th down: going for it -> {C.OFFENSE['name']}")
+    pad.press(C.OFFENSE["button"], hold=C.OFF_SELECT_HOLD)
+    snapped, status, hint = actions.chew_and_hike(
+        C.OFFENSE["run_seq"], log=log, allow_skip=False, chew=False)
+    return snapped, f"4TH DOWN GO - {status}", hint
 
 
 def play_loop(max_plays=99999, log=print):

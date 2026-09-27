@@ -280,13 +280,12 @@ def parse_hud(boxes):
                     res["goal"] = any(g in tail for g in
                                       ("GOAL", "GOA", "60AL", "GDAL", "G0AL"))
 
-                    # ⭐ FIELD POSITION, used by the field-goal range check in
-                    # grind.py. It renders after the play clock as an arrow plus
+                    # ⭐ FIELD POSITION (recorded, not acted on). It renders after the play clock as an arrow plus
                     # a yard line - "▼ 32", "▲ 26" - and Vision mangles the
                     # arrow into ^, ~, v, or drops it entirely.
                     # ⛔ DIRECTION IS THE WHOLE RULE: down-arrow is OUR half,
-                    # up-arrow is theirs. The raw arrow token is returned, and
-                    # the caller only trusts an up-arrow (or GOAL TO GO).
+                    # up-arrow is theirs. The raw arrow token is returned;
+                    # never infer a direction that was not actually read.
                     after = [(_clean(t), x) for t, x in row[i + 3:]]
                     for tok, _x in after:
                         m_fp = re.match(r"^([\^~v\u25b2\u25bc]?)\s*(\d{1,2})$",

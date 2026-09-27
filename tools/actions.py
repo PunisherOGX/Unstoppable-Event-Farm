@@ -388,23 +388,6 @@ def call_special_teams(log=print):
     return True, "special teams: selected + snapped", 0.0
 
 
-def kick_field_goal(log=print):
-    """Select the field goal, snap, and make one accuracy press FG_PRESS_AFTER
-    later. Skipping the power press lets the meter peak and fall on its own."""
-    pad.press("cross", hold=C.OFF_SELECT_HOLD)
-    time.sleep(1.0)
-    pad._remote_post("/focus", {})
-    time.sleep(0.3)
-    t_kick = time.time()
-    pad._remote_post("/press", {"buttons": ["cross"], "hold": C.OFF_SNAP_HOLD,
-                                "gap": 0.0, "focus": False})
-    time.sleep(max(0.0, (t_kick + C.FG_PRESS_AFTER) - time.time()))
-    pad._remote_post("/press", {"buttons": ["cross"], "hold": 0.06,
-                                "gap": 0.0, "focus": False})
-    return True, (f"FIELD GOAL - kicked @{time.time() - t_kick:.2f}s "
-                  f"(target {C.FG_PRESS_AFTER})"), 0.0
-
-
 # ---------------------------------------------------------------------------
 # VERIFIED MENU SELECTION (entry options, end-of-game menu)
 # ---------------------------------------------------------------------------

@@ -99,16 +99,10 @@ DEF_TAB = _env("MUT_EVENT_DEF_TAB", "FAVORITES")
 DEF_PLAY_BUTTON = _env("MUT_EVENT_DEF_BUTTON", "box")
 DEF_PLAY_NAME = _env("MUT_EVENT_DEF_NAME", "MID BLITZ")
 
-# Never punt: on a 4th-down PUNT screen, go back to FAVORITES and run the play.
-# (Kickoffs use the same screen and are left alone.)
+# Never punt and never kick a field goal: on a 4th-down special-teams screen,
+# go back to FAVORITES and run the play. (Field goals are not in this event's
+# scoring rules.) Kickoffs use the same screen and are left alone.
 GO_FOR_IT_ON_FOURTH = _env("MUT_EVENT_GO_FOR_IT", "1") == "1"
-# If the special-teams screen offers a FIELD GOAL, it is only kicked from
-# inside the opponent's FG_MAX_YARDLINE (read off the HUD, with the arrow or
-# GOAL TO GO proving it is their half). Otherwise the loop goes for it.
-# The kick is snap, wait FG_PRESS_AFTER, then one accuracy press: skipping the
-# power press lets the meter peak and come back down on its own.
-FG_MAX_YARDLINE = int(_env("MUT_EVENT_FG_MAX_YARDLINE", "10"))
-FG_PRESS_AFTER = float(_env("MUT_EVENT_FG_PRESS_AFTER", "3.5"))
 
 # Press lengths. 200 ms: shorter presses were sometimes dropped over Remote Play.
 OFF_SELECT_HOLD = float(_env("MUT_EVENT_SELECT_HOLD", "0.20"))

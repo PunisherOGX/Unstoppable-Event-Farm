@@ -33,7 +33,7 @@ penalties, turnovers and cutscenes are handled the same way.
 | Defence | **MID BLITZ** (square, in FAVORITES), plain press |
 | Snap timing | waits **6.0s** after the play call (the snap is refused until every player is set), then chews the play clock down to :14 while the game clock is running |
 | Tempo | sets **CHEW CLOCK** (R3 → Tempo) in Q1 and again in Q3 |
-| 4th down | never punts. Kicks a field goal only from inside the opponent's 10 |
+| 4th down | never punts, never kicks a field goal: always goes for it |
 | Between games | reads each menu by its text: postgame → progress → events list → entry options → next game. A loss or a completed run rolls straight into a fresh run |
 | History | every game appended to `~/.mut_unstoppable_history.jsonl` |
 
